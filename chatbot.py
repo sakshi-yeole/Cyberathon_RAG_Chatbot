@@ -57,6 +57,7 @@ greetings = [
 # Build Chat History
 # --------------------------------
 
+
 def build_chat_history(chat_history):
 
     if not chat_history:
@@ -68,15 +69,23 @@ def build_chat_history(chat_history):
 
     for message in recent_messages:
 
-        role = message["role"]
-        content = message["content"]
+        if not isinstance(message, dict):
+            continue
+
+        role = message.get("role")
+        content = message.get("content")
+
+        if not role or content is None:
+            continue
+
+        if role not in ["user", "assistant"]:
+            continue
 
         history.append(
             f"{role}: {content}"
         )
 
     return "\n".join(history)
-
 
 # --------------------------------
 # Get Relevant Cyberathon Data

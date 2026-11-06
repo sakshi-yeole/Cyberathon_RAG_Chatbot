@@ -1,3 +1,4 @@
+
 .venv/
 venv/
 __pycache__/
@@ -7,7 +8,9 @@ __pycache__/
 .env.*
 !.env.example
 
+vector_db/
 chroma_db/
+
 *.db
 *.sqlite
 *.sqlite3
@@ -16,13 +19,8 @@ chroma_db/
 .vscode/
 .idea/
 
-
-.data/
-scraped_data
+data/
+scraped_data/
 cyberathon.pdf
-.vector_db
-create_vector_db.py
-
-index.py
 
 
