@@ -19,7 +19,6 @@ chroma_db/
 .vscode/
 .idea/
 
-data/
 scraped_data/
 cyberathon.pdf
 
