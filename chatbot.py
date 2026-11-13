@@ -1,39 +1,44 @@
-import chromadb
 
-from sentence_transformers import SentenceTransformer
-from langchain_ollama import OllamaLLM
+import os
+from qdrant_client import QdrantClient, models
+from langchain_groq import ChatGroq
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 # --------------------------------
-# Embedding Model
+# Groq
 # --------------------------------
 
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
+llm = ChatGroq(
+    model="openai/gpt-oss-20b",
+    reasoning_format="hidden",
+    reasoning_effort="low",
+    max_tokens=512
 )
 
-
 # --------------------------------
-# Ollama
+# Qdrant Cloud
 # --------------------------------
 
-llm = OllamaLLM(
-    model="llama3.2"
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
+if not QDRANT_URL or not QDRANT_API_KEY:
+    raise ValueError(
+        "QDRANT_URL or QDRANT_API_KEY missing in .env"
+    )
+
+qdrant_client = QdrantClient(
+    url=QDRANT_URL,
+    api_key=QDRANT_API_KEY,
+    cloud_inference=True,
+    timeout=60
 )
 
-
-# --------------------------------
-# ChromaDB
-# --------------------------------
-
-client = chromadb.PersistentClient(
-    path="vector_db"
-)
-
-collection = client.get_collection(
-    name="cyberathon"
-)
-
+COLLECTION_NAME = "cyberathon"
 
 # --------------------------------
 # Greetings
@@ -65,7 +70,7 @@ def build_chat_history(chat_history):
 
     history = []
 
-    recent_messages = chat_history[-8:]
+    recent_messages = chat_history[-4:]
 
     for message in recent_messages:
 
@@ -91,32 +96,35 @@ def build_chat_history(chat_history):
 # Get Relevant Cyberathon Data
 # --------------------------------
 
-def get_context(search_query, n_results=15):
+# --------------------------------
+# Get Relevant Cyberathon Data
+# --------------------------------
 
-    query_embedding = (
-        embedding_model
-        .encode(search_query)
-        .tolist()
+def get_context(search_query, n_results=5):
+
+    results = qdrant_client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=models.Document(
+            text=search_query,
+            model="sentence-transformers/all-MiniLM-L6-v2"
+        ),
+        limit=n_results,
+        with_payload=True
     )
 
-    results = collection.query(
-        query_embeddings=[
-            query_embedding
-        ],
-        n_results=n_results
-    )
+    documents = []
 
-    documents = results.get(
-        "documents",
-        [[]]
-    )[0]
+    for point in results.points:
+
+        if point.payload and point.payload.get("text"):
+            documents.append(
+                point.payload["text"]
+            )
 
     if not documents:
         return ""
 
     return "\n\n".join(documents)
-
-
 # --------------------------------
 # Vacancy Data From Cyberathon
 # --------------------------------
@@ -706,6 +714,8 @@ when present in the data.
 
 9. Give a clear and direct answer.
 
+10. Do not mention information in the question that is not provided in the data.
+
 Answer:
 """
 
@@ -713,7 +723,7 @@ Answer:
             prompt
         )
 
-        return response.strip()
+        return response.content.strip()
 
 
     # --------------------------------
@@ -857,11 +867,11 @@ Answer:
 
 
     # --------------------------------
-    # Ollama
+    # Groq
     # --------------------------------
 
     response = llm.invoke(
         prompt
     )
-
-    return response.strip()
+    
+    return response.content.strip()

@@ -1,11 +1,9 @@
+
 requests
-beautifulsoup4
-reportlab
-pypdf
-sentence-transformers
-chromadb
-langchain
-langchain-text-splitters
-google-generativeai
+langchain-groq
 streamlit
 python-dotenv
+fastapi
+pydantic
+uvicorn
+qdrant-client

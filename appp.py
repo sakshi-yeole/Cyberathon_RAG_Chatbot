@@ -4,7 +4,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from chatbot import ask_chatbot
+import requests
 
 
 # --------------------------------
@@ -17,6 +17,11 @@ st.set_page_config(
     layout="centered"
 )
 
+
+API_BASE_URL = os.getenv(
+    "BACKEND_API_URL",
+    "http://127.0.0.1:8000"
+)
 
 # --------------------------------
 # Database
@@ -335,14 +340,27 @@ if question:
         avatar="🤖"
     ):
 
-        with st.spinner(
-            "...."
-        ):
-
-            answer = ask_chatbot(
-                question,
-                st.session_state.messages
-            )
+        with st.spinner("Generating answer..."):
+        
+            try:
+        
+                response = requests.post(
+                    f"{API_BASE_URL}/ask",
+                    json={
+                        "question": question,
+                        "chat_history": st.session_state.messages
+                    },
+                    timeout=120
+                )
+        
+                response.raise_for_status()
+        
+                answer = response.json()["answer"]
+        
+            except requests.RequestException as e:
+        
+                st.error(f"Backend API error: {e}")
+                st.stop()
 
 
         st.markdown(

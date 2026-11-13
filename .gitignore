@@ -22,4 +22,9 @@ chroma_db/
 scraped_data/
 cyberathon.pdf
 
+# Python build/cache
+*.egg-info/
+.pytest_cache/
 
+# Local environment files
+.streamlit/secrets.toml
